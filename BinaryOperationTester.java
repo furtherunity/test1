@@ -1,3 +1,4 @@
+import java.sql.*;
 import java.util.*;
 
 abstract class BinaryOperation_3_2 {
@@ -66,6 +67,53 @@ abstract class BinaryOperation_3_2 {
     }
     public String fullString(){
         return toString()+"="+getValue();
+    }
+
+    //检测加减法运算数及运算结果是否在100以内
+    public int construct(int left, int right, char op) {
+        int result=0;
+        if (!(0 <= left && left <= 100)) {
+            throw new RuntimeException("左运算数不在0~100的范围");
+        }
+        if (op == '+') {
+            result = left + right;
+            if (!(0 <= result && result <= 100)) {
+                throw new RuntimeException("加法结果不在0~100的范围");
+            }
+        } else if (op == '-') {
+            result = left - right;
+            if (!(0 <= result && result <= 100)) {
+                throw new RuntimeException("减法结果不在0~100的范围");
+            }
+        } else {
+            throw new RuntimeException(op + "不是加号或减号运算符！");
+        }
+        left_operand = left;
+        right_operand = right;
+        operator = op;
+        value = result;
+        return value;
+    }
+    //检测乘法口诀是否合法
+    public int construct1(int left, int right, char op) {
+        int result=0;
+        if (!(0 <= left && left <= 9)) {
+            throw new RuntimeException("左运算数不在范围内");
+        }
+        if (op == '*') {
+            result = left * right;
+            if (!(0 <= result && result <= 81)) {
+                throw new RuntimeException("加法结果不在范围内");
+            }
+        }
+         else {
+            throw new RuntimeException(op + "不是乘法运算符！");
+        }
+        left_operand = left;
+        right_operand = right;
+        operator = op;
+        value = result;
+        return value;
     }
 }
 
@@ -179,26 +227,119 @@ class Exercise {
 
 }
 class ExerciseSheet {
+    private BinaryOperation_3_2 e;
+
     public void formattedDisplay(Exercise ex) {
         int count = 1;//题目序号
         Map<Integer, Integer> map = new HashMap();
-        while(ex.hasNext()) {
+        while (ex.hasNext()) {
             System.out.printf("%3d. ", count);
-            BinaryOperation_3_2 e=ex.next();
-            System.out.print(e.asString()+"  ");
+            e = ex.next();
+            System.out.print(e.asString() + "  ");
             Scanner sc = new Scanner(System.in);
             int num = sc.nextInt();
             if (e.getValue() != num) {
                 map.put(count, e.getValue());
+                Connection conn = null;
+                PreparedStatement pss = null;
+                String sql1 = "insert into mistake values (?,?,?)";
+                try {
+                    Class.forName("com.mysql.cj.jdbc.Driver");
+
+
+                } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
+                try {
+                    conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/软件构造?&useSSL=false&serverTimezone=UTC", "root", "admin");
+
+                    pss = conn.prepareStatement(sql1);
+                    pss.setInt(1, count);
+                    pss.setString(2, e.asString());
+                    pss.setInt(3,e.getValue());
+
+
+                    pss.executeUpdate();
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    try {
+                        conn.close();
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                    }
+                    ;
+                }
+            }
+            Connection con = null;
+            ResultSet rs = null;
+            PreparedStatement ps = null;
+            String sql = "insert into calculate values (?,?,?)";
+            try {
+                Class.forName("com.mysql.cj.jdbc.Driver");
+
+
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            }
+            try {
+                con = DriverManager.getConnection("jdbc:mysql://localhost:3306/软件构造?&useSSL=false&serverTimezone=UTC", "root", "admin");
+
+                ps = con.prepareStatement(sql);
+                ps.setInt(1, count);
+                ps.setString(2, e.asString());
+                ps.setInt(3, e.getValue());
+
+                ps.executeUpdate();
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                try {
+                    con.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+                ;
+                Set<Map.Entry<Integer, Integer>> entrySet = map.entrySet();
+                for (Map.Entry entry : entrySet) {
+                    System.out.println("第" + entry.getKey() + "题错误，" + "正确答案为：" + entry.getValue());
+                }
             }
             count++;
         }
-        Set<Map.Entry<Integer, Integer>> entrySet = map.entrySet();
-        for (Map.Entry entry : entrySet) {
-            System.out.println("第"+entry.getKey() + "题错误，" +"正确答案为："+ entry.getValue());
-        }
     }
 }
+//检测加减运算数和运算结果是否在100以内
+//public class BinaryOperationTester{
+//    public static void main(String[] args) {
+//        BinaryOperation_3_2 b1=new AdditionOperation();
+//        BinaryOperation_3_2 b2=new SubtractOperation();
+//        int left1=b1.getLeft_operand();
+//        int right1=b1.getRight_operand();
+//        char op1=b1.getOperator();
+//        int result1=b1.construct(left1,right1,op1);
+//        if(result1<=100)System.out.println("加法算式合法！");
+//        int left2=b2.getLeft_operand();
+//        int right2=b2.getRight_operand();
+//        char op2=b2.getOperator();
+//        int result2=b2.construct(left2,right2,op2);
+//        if(result2<=100)System.out.println("减法算式合法！");
+//    }
+//}
+
+//检测乘法口诀是否合法
+//public class BinaryOperationTester {
+//    public static void main(String[] args) {
+//        BinaryOperation_3_2 b1 = new MultiplicationOperation();
+//        int left1=b1.getLeft_operand();
+//        int right1=b1.getRight_operand();
+//        char op1=b1.getOperator();
+//        int result=b1.construct1(left1,right1,op1);
+//        System.out.println("算式合法！"+"结果为："+result);
+//    }
+//}
 
 //一道题的检测代码
 //public class BinaryOperationTester {
@@ -223,21 +364,21 @@ class ExerciseSheet {
 //}
 
 //一套题的检测代码
-public class BinaryOperationTester {
-    public static void main(String[] args) {
-        Exercise exercise=new Exercise();
-        exercise.generateAdditionExercise(3);
-        ExerciseSheet sheet=new ExerciseSheet();
-        sheet.formattedDisplay(exercise);
-    }
-}
-
-//乘法口诀
 //public class BinaryOperationTester {
 //    public static void main(String[] args) {
 //        Exercise exercise=new Exercise();
-//        exercise.generateMultiplicationExercise(3);
+//        exercise.generateAdditionExercise(3);
 //        ExerciseSheet sheet=new ExerciseSheet();
 //        sheet.formattedDisplay(exercise);
 //    }
 //}
+
+//乘法口诀
+public class BinaryOperationTester {
+    public static void main(String[] args) {
+        Exercise exercise=new Exercise();
+        exercise.generateMultiplicationExercise(3);
+        ExerciseSheet sheet=new ExerciseSheet();
+        sheet.formattedDisplay(exercise);
+    }
+}
